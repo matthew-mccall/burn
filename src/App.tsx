@@ -76,7 +76,10 @@ function App() {
                 return
             }
 
-            browser.storage.local.get().then(({position, urls}) => setPopupState({position, urls}))
+            browser.storage.local.get().then(({position, urls}) => {
+                if (!position || !urls) { return }
+                setPopupState({position, urls})
+            })
         })
     }, [])
 
@@ -107,6 +110,16 @@ function App() {
         setUrls(firstResult);
     }
 
+    async function openLink(index: number) {
+        const currentTabId = await getCurrentTabId();
+        browser.tabs.update(currentTabId, {url: urls[index]})
+            .then(() => {
+                const saveData: PopupState = {position: index, urls}
+                browser.storage.local.set(saveData)
+            })
+            .then(() => setPosition(index))
+    }
+
     async function openNextLink() {
         const newPosition = position + 1;
         if (newPosition === urls.length) {
@@ -115,13 +128,7 @@ function App() {
         if (position === -1) {
             browser.tabs.create({active: true, url: urls[0]}).then(() => setPosition(newPosition))
         }
-        const currentTabId = await getCurrentTabId();
-        browser.tabs.update(currentTabId, {url: urls[newPosition]})
-            .then(() => {
-                const saveData: PopupState = {position: newPosition, urls}
-                browser.storage.local.set(saveData)
-            })
-            .then(() => setPosition(newPosition))
+        await openLink(newPosition);
     }
 
     async function openPrevLink() {
@@ -129,14 +136,7 @@ function App() {
         if (newPosition === -1) {
             return;
         }
-        setPosition(position - 1)
-        const currentTabId = await getCurrentTabId();
-        browser.tabs.update(currentTabId, {url: urls[newPosition]})
-            .then(() => {
-                const saveData: PopupState = {position: newPosition, urls}
-                browser.storage.local.set(saveData)
-            })
-            .then(() => setPosition(newPosition));
+        await openLink(newPosition);
     }
 
     function clearState() { browser.storage.local.clear().then(() => setPopupState({position: -1, urls: []})) }
@@ -167,7 +167,7 @@ function App() {
                     <Alert variant={"info"}>Note: Importing from selection currently does not work on selected text
                         from <code>&lt;textarea&gt;</code>s. Use the context menu action instead.</Alert>
                     <ListGroup>
-                        {urls.map((url, i) => <ListGroup.Item key={i} active={position === i}>{url}</ListGroup.Item>)}
+                        {urls.map((url, i) => <ListGroup.Item key={i} active={position === i} action onClick={() => openLink(i)}>{url}</ListGroup.Item>)}
                     </ListGroup>
                 </Stack>
             </div>
