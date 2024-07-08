@@ -10,7 +10,7 @@
     "96": "icons/burn-96.png"
   },
 
-  "permissions": ["activeTab", "contextMenus", "scripting"],
+  "permissions": ["activeTab", "contextMenus", "storage", "scripting"],
 
   "action": {
     "default_icon": "icons/burn-32.png",

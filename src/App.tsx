@@ -6,7 +6,9 @@ import {Message} from "./Message.ts";
 
 function getSelectedURLs(): string[] {
     const selection = window.getSelection();
-    if (!selection) { return [] }
+    if (!selection) {
+        return []
+    }
 
     const selections = []
     const newURLs = []
@@ -34,12 +36,27 @@ function getSelectedURLs(): string[] {
     });
 }
 
-function App() {
-    const [urls, setUrls] = useState<string[]>([])
-    const [selected, setSelected] = useState<number>(-1)
+interface PopupState {
+    position: number
+    urls: string[]
+}
 
-    function importUrls(urls: string) {
-        const strings = urls.split(/\s+/);
+function App() {
+    const [popupState, setPopupState] = useState<PopupState>({position: -1, urls: []})
+    const {position, urls} = popupState
+
+    function setPosition(newPosition: number) {
+        const newState: PopupState = {position: newPosition, urls}
+        browser.storage.local.set(newState).then(() => setPopupState(newState))
+    }
+
+    function setUrls(newURLs: string[]) {
+        const newState: PopupState = {position, urls: newURLs}
+        browser.storage.local.set(newState).then(() => setPopupState(newState))
+    }
+
+    function importUrls(str: string) {
+        const strings = str.split(/\s+/);
         const newURLs = strings.filter((url) => {
             try {
                 new URL(url);
@@ -52,51 +69,77 @@ function App() {
     }
 
     useEffect(() => {
-        const popupReadyMessage: Message = { type: "popupReady", content: "" }
+        const popupReadyMessage: Message = {type: "popupReady", content: ""}
         browser.runtime.sendMessage(popupReadyMessage).then((response?: Message) => {
             if (response) {
                 importUrls(response.content)
                 return
             }
+
+            browser.storage.local.get().then(({position, urls}) => setPopupState({position, urls}))
         })
     }, [])
 
     async function getCurrentTabId() {
-        const openedTabs = await browser.tabs.query({ active: true, highlighted: true, currentWindow: true });
+        const openedTabs = await browser.tabs.query({active: true, highlighted: true, currentWindow: true});
 
-        if (openedTabs.length < 1) { return; }
-        return  openedTabs[0].id;
+        if (openedTabs.length < 1) {
+            return;
+        }
+        return openedTabs[0].id;
     }
 
     async function importFromSelection() {
         const currentTabId = await getCurrentTabId()
 
-        if (!currentTabId) { return; }
+        if (!currentTabId) {
+            return;
+        }
         const injectionResults = await browser.scripting.executeScript({
             func: getSelectedURLs,
             target: {tabId: currentTabId}
         })
 
-        if (injectionResults.length < 1) { return; }
+        if (injectionResults.length < 1) {
+            return;
+        }
         const firstResult = injectionResults[0].result;
         setUrls(firstResult);
     }
 
-    async function openNextLink()
-    {
-        if (selected + 1 === urls.length) { return; }
-        if (selected === -1) { browser.tabs.create({ active: true, url: urls[0] }).then(() => setSelected(selected + 1))}
+    async function openNextLink() {
+        const newPosition = position + 1;
+        if (newPosition === urls.length) {
+            return;
+        }
+        if (position === -1) {
+            browser.tabs.create({active: true, url: urls[0]}).then(() => setPosition(newPosition))
+        }
         const currentTabId = await getCurrentTabId();
-        browser.tabs.update(currentTabId, { url: urls[selected + 1] }).then(() => setSelected(selected + 1));
+        browser.tabs.update(currentTabId, {url: urls[newPosition]})
+            .then(() => {
+                const saveData: PopupState = {position: newPosition, urls}
+                browser.storage.local.set(saveData)
+            })
+            .then(() => setPosition(newPosition))
     }
 
-    async function openPrevLink()
-    {
-        if (selected - 1 === -1) { return; }
-        setSelected(selected - 1)
+    async function openPrevLink() {
+        const newPosition = position - 1;
+        if (newPosition === -1) {
+            return;
+        }
+        setPosition(position - 1)
         const currentTabId = await getCurrentTabId();
-        browser.tabs.update(currentTabId, { url: urls[selected - 1] }).then(() => setSelected(selected - 1));
+        browser.tabs.update(currentTabId, {url: urls[newPosition]})
+            .then(() => {
+                const saveData: PopupState = {position: newPosition, urls}
+                browser.storage.local.set(saveData)
+            })
+            .then(() => setPosition(newPosition));
     }
+
+    function clearState() { browser.storage.local.clear().then(() => setPopupState({position: -1, urls: []})) }
 
     return (
         <Container fluid>
@@ -105,18 +148,26 @@ function App() {
                     <h1 className={"font-monospace"}>Bulk URl Navigator</h1>
                     <Stack direction="horizontal" gap={2}>
                         <div>Import from...</div>
-                        <ButtonGroup aria-label="Import group">
-                            <Button variant={"light"} className={"border"} onClick={importFromSelection}>Selection</Button>
+                        <ButtonGroup className="me-auto" aria-label="Import group">
+                            <Button variant={"light"} className={"border"}
+                                    onClick={importFromSelection}>Selection</Button>
                             {/*<Button variant={"light"} className={"border"} onClick={importFromSelection}>Clipboard</Button>*/}
                         </ButtonGroup>
-                        <ButtonGroup className="ms-auto" aria-label="First group">
-                            <Button variant={"light"} className={"border"} disabled={selected < 0} onClick={openPrevLink}>Previous</Button>
-                            <Button variant={"light"} className={"border"} disabled={selected >= urls.length - 1} onClick={openNextLink}>Next</Button>
-                        </ButtonGroup>
+                        <Button variant={"light"} className={"border"} onClick={clearState} disabled={urls.length < 0}>Clear</Button>
+                        {position === -1
+                            ? <Button onClick={openNextLink}>Begin Pagination...</Button>
+                            : <ButtonGroup aria-label="Paginate group">
+                                <Button variant={"light"} className={"border"} disabled={position < 1}
+                                        onClick={openPrevLink}>Previous</Button>
+                                <Button variant={"light"} className={"border"} disabled={position >= urls.length - 1}
+                                        onClick={openNextLink}>Next</Button>
+                            </ButtonGroup>}
+
                     </Stack>
-                    <Alert variant={"info"}>Note: Importing from selection currently does not work on selected text from <code>&lt;textarea&gt;</code>s. Use the context menu action instead.</Alert>
+                    <Alert variant={"info"}>Note: Importing from selection currently does not work on selected text
+                        from <code>&lt;textarea&gt;</code>s. Use the context menu action instead.</Alert>
                     <ListGroup>
-                        {urls.map((url, i) => <ListGroup.Item key={i} active={selected === i}>{url}</ListGroup.Item>)}
+                        {urls.map((url, i) => <ListGroup.Item key={i} active={position === i}>{url}</ListGroup.Item>)}
                     </ListGroup>
                 </Stack>
             </div>
