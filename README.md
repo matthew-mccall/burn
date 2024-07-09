@@ -1,30 +1,11 @@
-# React + TypeScript + Vite
+# Bulk URl Navigator
+<img width="1609" alt="Screenshot 2024-07-07 at 4 44 52 PM" src="https://github.com/matthew-mccall/burn/assets/46231996/7cb66d6b-58de-488d-82ab-b4a04308e11c">
+This is a Manifest v3 Web Extension that allows you to paginate through a list of URLs. You may right click on a list of URLs and then click on `Paginate Through Selected Links...` to import the links into the extension. You can then use the `Next` and `Previous` buttons, to load the next or previous link respectively in the current tab. For the first link, a new tab will be opened.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### Building
+1. First clone the repository
+2. Install the dependencies with `npm install`
+3. Build the extenstion with `npm run build`
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+### Testing
+This extension has been tested in Firefox 127. This extension is still in development and has not been submitted to [addons.mozilla.org](addons.mozilla.org) just yet. To try it out for the time being, go to `about:debugging` and click `Load Temporary Add-on...`. Then select `dist/manifest.json` to load the extension.
