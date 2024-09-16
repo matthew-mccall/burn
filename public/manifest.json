@@ -21,5 +21,13 @@
   "background": {
     "scripts": ["background.js"],
     "type": "module"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "burn@mmccall.dev",
+      "strict_min_version": "42.0"
+    }
   }
+
 }

@@ -81,7 +81,7 @@ function App() {
                 setPopupState({position, urls})
             })
         })
-    }, [])
+    })
 
     async function getCurrentTabId() {
         const openedTabs = await browser.tabs.query({active: true, highlighted: true, currentWindow: true});
@@ -153,9 +153,9 @@ function App() {
                                     onClick={importFromSelection}>Selection</Button>
                             {/*<Button variant={"light"} className={"border"} onClick={importFromSelection}>Clipboard</Button>*/}
                         </ButtonGroup>
-                        <Button variant={"light"} className={"border"} onClick={clearState} disabled={urls.length < 0}>Clear</Button>
+                        <Button variant={"light"} className={"border"} onClick={clearState} disabled={urls.length < 1}>Clear</Button>
                         {position === -1
-                            ? <Button onClick={openNextLink}>Begin Pagination...</Button>
+                            ? <Button onClick={openNextLink} disabled={urls.length < 1}>Begin Pagination...</Button>
                             : <ButtonGroup aria-label="Paginate group">
                                 <Button variant={"light"} className={"border"} disabled={position < 1}
                                         onClick={openPrevLink}>Previous</Button>
