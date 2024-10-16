@@ -3,6 +3,7 @@ import {useEffect, useState} from "react";
 import browser from "webextension-polyfill";
 import {Alert, Button, ButtonGroup, Container, ListGroup, Stack} from "react-bootstrap";
 import {Message} from "./Message.ts";
+import BlobBackground from "./components/BlobBackground";
 
 function getSelectedURLs(): string[] {
     const selection = window.getSelection();
@@ -142,36 +143,44 @@ function App() {
     function clearState() { browser.storage.local.clear().then(() => setPopupState({position: -1, urls: []})) }
 
     return (
-        <Container fluid>
-            <div className={"py-3"}>
-                <Stack gap={2}>
-                    <h1 className={"font-monospace"}>Bulk URl Navigator</h1>
-                    <Stack direction="horizontal" gap={2}>
-                        <div>Import from...</div>
-                        <ButtonGroup className="me-auto" aria-label="Import group">
-                            <Button variant={"light"} className={"border"}
-                                    onClick={importFromSelection}>Selection</Button>
-                            {/*<Button variant={"light"} className={"border"} onClick={importFromSelection}>Clipboard</Button>*/}
-                        </ButtonGroup>
-                        <Button variant={"light"} className={"border"} onClick={clearState} disabled={urls.length < 1}>Clear</Button>
-                        {position === -1
-                            ? <Button onClick={openNextLink} disabled={urls.length < 1}>Begin Pagination...</Button>
-                            : <ButtonGroup aria-label="Paginate group">
-                                <Button variant={"light"} className={"border"} disabled={position < 1}
-                                        onClick={openPrevLink}>Previous</Button>
-                                <Button variant={"light"} className={"border"} disabled={position >= urls.length - 1}
-                                        onClick={openNextLink}>Next</Button>
-                            </ButtonGroup>}
+        <>
+            <BlobBackground>
+                <Container fluid>
+                    <div className={"py-4"}>
+                        <h1 className={"text-light font-monospace"}>Bulk URl Navigator</h1>
+                    </div>
+                </Container>
+            </BlobBackground>
+            <Container fluid className={"bg-body"}>
+                <div className={"py-3"}>
+                    <Stack gap={2}>
+                        <Stack direction="horizontal" gap={2}>
+                            <div>Import from...</div>
+                            <ButtonGroup className="me-auto" aria-label="Import group">
+                                <Button variant={"light"} className={"border"}
+                                        onClick={importFromSelection}>Selection</Button>
+                                {/*<Button variant={"light"} className={"border"} onClick={importFromSelection}>Clipboard</Button>*/}
+                            </ButtonGroup>
+                            <Button variant={"light"} className={"border"} onClick={clearState} disabled={urls.length < 1}>Clear</Button>
+                            {position === -1
+                                ? <Button onClick={openNextLink} disabled={urls.length < 1}>Begin Pagination...</Button>
+                                : <ButtonGroup aria-label="Paginate group">
+                                    <Button variant={"light"} className={"border"} disabled={position < 1}
+                                            onClick={openPrevLink}>Previous</Button>
+                                    <Button variant={"light"} className={"border"} disabled={position >= urls.length - 1}
+                                            onClick={openNextLink}>Next</Button>
+                                </ButtonGroup>}
 
+                        </Stack>
+                        <Alert variant={"info"}>Note: Importing from selection currently does not work on selected text
+                            from <code>&lt;textarea&gt;</code>s. Use the context menu action instead.</Alert>
+                        <ListGroup>
+                            {urls.map((url, i) => <ListGroup.Item key={i} active={position === i} action onClick={() => openLink(i)}>{url}</ListGroup.Item>)}
+                        </ListGroup>
                     </Stack>
-                    <Alert variant={"info"}>Note: Importing from selection currently does not work on selected text
-                        from <code>&lt;textarea&gt;</code>s. Use the context menu action instead.</Alert>
-                    <ListGroup>
-                        {urls.map((url, i) => <ListGroup.Item key={i} active={position === i} action onClick={() => openLink(i)}>{url}</ListGroup.Item>)}
-                    </ListGroup>
-                </Stack>
-            </div>
-        </Container>
+                </div>
+            </Container>
+        </>
     )
 }
 
